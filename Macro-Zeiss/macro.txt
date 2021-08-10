@@ -1,0 +1,141 @@
+﻿####Lancer la routine pour détecter un cercle
+
+import sys
+import os
+
+###-------------------------------------------------------------------
+
+
+def read_file(path) :
+    filin = open(path, "r")
+    lignes = filin.read()
+    
+    idx = 0
+    for i in range(len(lignes)):
+        if lignes[i] == '\n':
+            idx = idx + 1
+    
+    Container_out = dict(dict())
+    
+    Container_tempo = dict()
+
+    container =[]
+
+
+    for i in range(idx) :
+        start = int(i*1.0/idx*len(lignes)*1.0)
+        end = int((i*1.0+1.0/idx*1.0)*len(lignes))-2
+        Start_point = lignes[start:end].Split()
+        if Start_point != '':
+            container.extend(Start_point)
+    print(container)
+    
+    nmb_contener = len(container)/idx
+    print(nmb_contener)
+    
+    for i in range(len(container)):
+        #for j in range(len(container[i])):
+        if container[i] != '':
+            if i == 0 :
+                Container_tempo['Taille_x']=float(container[i])
+            if i == 1 :
+                Container_tempo['Taille_y']=float(container[i]) 
+            if i == 2 :
+                Container_tempo['Height']=float(container[i])
+            if i == 3 :
+                Container_tempo['Lenght']=float(container[i])
+            print(' i = ',container[i])
+        Container_out['Container_'+str(i)]=Container_tempo
+
+    return Container_out
+    
+###--------------------------------------------------------------------------
+##Charger un rack
+
+#Ejecter le rail
+EjectandLoad = LiveScanScriptingPlugin()
+Zeiss.Micro.AMP.Scripting.LiveScanScriptingPlugin.EjectTray(EjectandLoad)
+
+# Ouvrir une boite de dialogue avec l'instruction placé le rack
+window = ZenWindow()
+window.AddTextBlock("Ajouter les échantillon puis appuier sur 'OK'")
+result=window.Show()
+
+#Load le rail
+Zeiss.Micro.AMP.Scripting.LiveScanScriptingPlugin.LoadTrayAndPrescan(EjectandLoad)
+
+##Enregistrer mon image dans le fichier
+image1 = Zen.Application.Documents.GetByName("CarrierOverview.czi")
+Zen.Application.Save(image1, "D:\\Users1\\Mathilde_Vergnaud\\CarrierOverviewCopie\\datasets\\CarrierOverview.czi", True)
+
+#Ouvrir l'experiment
+experiment1 = Zen.Acquisition.Experiments.GetByName("Experiment5.czexp")
+
+##Lancer un executable
+chemin = "D:\\Users1\\Mathilde_Vergnaud\\CarrierOverviewCopie\\test_detection.exe"
+os.popen(chemin)
+
+# Ouvrir une boite de dialogue avec l'instruction placé le rack
+window = ZenWindow()
+window.AddTextBlock("Lancer exe 'OK'")
+result=window.Show()
+
+##Ouvrir un fichier
+path = "D:\\Users1\\Mathilde_Vergnaud\\CarrierOverviewCopie\\data\\data_coverslips.txt"
+
+#Lire le fichier et enregistrer les donnees dans des variables
+info_position = read_file(path)
+
+posX = info_position['Container_0']['Taille_x']
+posY = info_position['Container_0']['Taille_y']
+Height = info_position['Container_0']['Height']
+
+print('posX', posX)
+print('posY', posY)
+
+#Bouger au centre de la tuille
+Zen.Devices.Stage.TargetPositionY = posY
+Zen.Devices.Stage.Apply()
+
+Zen.Devices.Stage.TargetPositionX = posX
+Zen.Devices.Stage.Apply()
+
+##Lancer l'experiment modifiee
+#Ouvrir l'experiment
+experiment1 = Zen.Acquisition.Experiments.GetByName("Experiment5.czexp")
+
+#Ouvrir une extension pour pouvoir moddifier la tuille
+exp= ZenExperimentExtensions_COM()
+Zeiss.Micro.LM.Scripting.ZenExperimentExtensions_COM.ClearTileRegionsAndPositions(exp, experiment1, 0)
+
+#Zoom *5 * 0.5
+Zen.Devices.Optovar.TargetPosition = 3
+Zen.Devices.Optovar.Apply()
+
+#Faire le zoom
+#Zen.Acquisition.FindAutofocus(experiment1)
+#info_zoom = Zen.Devices.Focus.ActualPosition
+
+Zen.Acquisition.FindSurface()
+Zen.Acquisition.StoreFocus()
+#print(type(info_zoom))
+
+#Ajouter une ellipse
+ZenExperimentExtensions_COM.AddEllipseTileRegion(exp, experiment1, 0, posX, posY, Height, Height, 681.09)
+
+#Zen.Acquisition.FindSurface()
+
+#Lancer l'experiment
+Tiles_Aqcuisition = Zen.Acquisition.Execute(experiment1)
+
+# get the stitching settings 
+Stitchset = "D:\\Users1\\Mathilde_Vergnaud\\CarrierOverviewCopie\\datasets\\Stitching_Channel_1.czips"
+
+# create a function setting for the Stiching Function 
+functionsetting1 = Zen.Processing.Transformation.Geometric.Stitching(Tiles_Aqcuisition)
+
+# apply the setting 
+functionsetting1.Load(Stitchset) 
+
+##Enregistrer la nouvelle image 
+Zen.Application.Save(functionsetting1, "D:\\Users1\\Mathilde_Vergnaud\\CarrierOverviewCopie\\datasets\\tiles_acquisition_stitcher.czi")
