@@ -5,7 +5,7 @@ Dépend des librairies :
 	pip install scikit-image
 	version python : 3.6
 	
-Cette classe permet d'appliquer le filtre de Canny et le fonction de Hough sur les images en mosaique de coupe sérié. 
+Ce fichier permet d'appliquer le filtre de Canny et le fonction de Hough sur les images en mosaique de coupe sérié. 
 
 **Read Experience :**
 
