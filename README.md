@@ -1,5 +1,5 @@
 # Code-Stage-2021
-Automatisation du microscope de chez Zeiss le Cell Discover 7
+Automatisation d'un microscope de Zeiss le Cell Discover 7
 
 __Carrier Overview :__
 
