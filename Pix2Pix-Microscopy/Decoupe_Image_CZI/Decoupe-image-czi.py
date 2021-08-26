@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
+import matplotlib.image as mpimg
 
 import ShenCastanFlat as filter
 import ReadExperiment
@@ -16,6 +16,7 @@ class Decoupe_Image_CZI_To_Jpeg :
     directory = ""
     ROI = list()
     imagette = list()
+    list_image = dict()
     
     def __init__(self,directory_file = "",filename = "tiles_acquisition_stitcher0.czi") :
         """
@@ -84,8 +85,6 @@ class Decoupe_Image_CZI_To_Jpeg :
 
     def crop(self, image, height = 256, width = 256):
         
-        list_image = dict()
-           
         imgwidth, imgheight = image.shape
       
         sizex = int(imgwidth/height)
@@ -96,18 +95,20 @@ class Decoupe_Image_CZI_To_Jpeg :
         im_ar = image[0:imgwidth,0:imgheight]
 
         k = 0
-        for i in range(height,imgheight-2*height,height):
-            for j in range(width,imgwidth-2*width,width):
-                image_arr = im_ar[i:i+height,j:j+width]
-                imgPIL = Image.fromarray(image_arr)
-                imgPIL.save('./image/'+str(i)+'_' + str(k) + '_image.tiff')
-                list_image.update({str(i)+'_' + str(k) + '_image.tiff': image_arr})
+        for i in range(height,imgheight-2*height-1,height):
+            for j in range(width,imgwidth-width-1,width):
+                #plt.imshow(im_ar[j:j+width,i:i+height])
+                #plt.show()
+                cc = [j,j+width,i,i+height]
+                image_arr = im_ar[j:j+width,i:i+height]
+                mpimg.imsave('./image/'+str(i)+'_' + str(k) + '_3image.jpeg', image_arr)
+                self.list_image.update({str(i)+'_' + str(k) + '_image.jpeg': cc})
                 
                 k = k+1
                 
         print("done")
             
-        return list_image
+        return self.list_image
     
     def crop_in_ROI(self):
         
@@ -115,7 +116,7 @@ class Decoupe_Image_CZI_To_Jpeg :
         self.ShenCastantoBright()
         
         for i in self.ROI: 
-            self.imagette.append(self.crop(i))
+            self.imagette.append(self.crop(self.input_image[i[1]:i[3], i[0]:i[2]]))
         
         
         
